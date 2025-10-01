@@ -33,6 +33,7 @@ import { MediaEditorFabricCropRect } from '../mediaEditor/MediaEditorFabricCropR
 import { MediaEditorFabricDigitalTimeSticker } from '../mediaEditor/MediaEditorFabricDigitalTimeSticker.js';
 import { MediaEditorFabricIText } from '../mediaEditor/MediaEditorFabricIText.js';
 import { MediaEditorFabricPencilBrush } from '../mediaEditor/MediaEditorFabricPencilBrush.js';
+import { MediaEditorFabricBlurBrush } from '../mediaEditor/MediaEditorFabricBlurBrush.js';
 import { MediaEditorFabricSticker } from '../mediaEditor/MediaEditorFabricSticker.js';
 import { fabricEffectListener } from '../mediaEditor/fabricEffectListener.js';
 import { getRGBA, getHSL } from '../mediaEditor/util/color.js';
@@ -135,6 +136,7 @@ enum DrawWidth {
 enum DrawTool {
   Pen = 'Pen',
   Highlighter = 'Highlighter',
+  Blur = 'Blur',
 }
 
 enum CropPreset {
@@ -693,19 +695,27 @@ export function MediaEditor({
     fabricCanvas.discardActiveObject();
     fabricCanvas.isDrawingMode = true;
 
-    const freeDrawingBrush = new MediaEditorFabricPencilBrush(fabricCanvas);
-    if (drawTool === DrawTool.Highlighter) {
-      freeDrawingBrush.color = getRGBA(sliderValue, 0.5);
-      freeDrawingBrush.strokeLineCap = 'square';
-      freeDrawingBrush.strokeLineJoin = 'miter';
-      freeDrawingBrush.width = (drawWidth / zoom) * 2;
+    if (drawTool === DrawTool.Blur) {
+      // Use the blur brush
+      const blurBrush = new MediaEditorFabricBlurBrush(fabricCanvas);
+      blurBrush.width = drawWidth / zoom;
+      fabricCanvas.freeDrawingBrush = blurBrush;
     } else {
-      freeDrawingBrush.color = getHSL(sliderValue);
-      freeDrawingBrush.strokeLineCap = 'round';
-      freeDrawingBrush.strokeLineJoin = 'bevel';
-      freeDrawingBrush.width = drawWidth / zoom;
+      // Use the pencil brush for pen and highlighter
+      const freeDrawingBrush = new MediaEditorFabricPencilBrush(fabricCanvas);
+      if (drawTool === DrawTool.Highlighter) {
+        freeDrawingBrush.color = getRGBA(sliderValue, 0.5);
+        freeDrawingBrush.strokeLineCap = 'square';
+        freeDrawingBrush.strokeLineJoin = 'miter';
+        freeDrawingBrush.width = (drawWidth / zoom) * 2;
+      } else {
+        freeDrawingBrush.color = getHSL(sliderValue);
+        freeDrawingBrush.strokeLineCap = 'round';
+        freeDrawingBrush.strokeLineJoin = 'bevel';
+        freeDrawingBrush.width = drawWidth / zoom;
+      }
+      fabricCanvas.freeDrawingBrush = freeDrawingBrush;
     }
-    fabricCanvas.freeDrawingBrush = freeDrawingBrush;
 
     fabricCanvas.requestRenderAll();
   }, [drawTool, drawWidth, editMode, fabricCanvas, sliderValue, zoom]);
@@ -967,12 +977,20 @@ export function MediaEditor({
                   onClick: () => setDrawTool(DrawTool.Highlighter),
                   value: DrawTool.Highlighter,
                 },
+                {
+                  icon: 'MediaEditor__icon--draw-blur',
+                  label: i18n('icu:MediaEditor__draw--blur'),
+                  onClick: () => setDrawTool(DrawTool.Blur),
+                  value: DrawTool.Blur,
+                },
               ]}
               moduleClassName={classNames('MediaEditor__toolbar__tool', {
                 'MediaEditor__toolbar__button--draw-pen':
                   drawTool === DrawTool.Pen,
                 'MediaEditor__toolbar__button--draw-highlighter':
                   drawTool === DrawTool.Highlighter,
+                'MediaEditor__toolbar__button--draw-blur':
+                  drawTool === DrawTool.Blur,
               })}
               theme={Theme.Dark}
               value={drawTool}

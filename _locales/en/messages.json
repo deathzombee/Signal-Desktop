@@ -7546,6 +7546,10 @@
     "messageformat": "Highlighter",
     "description": "Type of brush to free draw"
   },
+  "icu:MediaEditor__draw--blur": {
+    "messageformat": "Blur",
+    "description": "Type of brush to blur parts of the image"
+  },
   "icu:MediaEditor__draw--thin": {
     "messageformat": "Thin",
     "description": "Tip width of the brush"
